@@ -8,9 +8,6 @@ permissions:
   id-token: write
 on:
   push:
-    tags:
-       - 'v*.*.*' # Trigger on version tags like v1.0.0
-  workflow_dispatch: # Allow manual triggering
 
 jobs:
   build:
@@ -84,6 +81,9 @@ jobs:
       - name: Move artifacts
         run: npm run artifacts
         working-directory: bindings/nodejs
+
+      - name: setup tmate
+        uses: mxschmitt/action-tmate@v3
 
       - name: Publish
         run: |
