@@ -42,7 +42,7 @@ async def run_notepad():
         document.press_key('{Ctrl}s')
 
         print("Entering file name...")
-        save_dialog = desktop.locator('window:Save As').locator('window:Save As')
+        save_dialog = editor.locator('window:Save As')
         save_dialog_window = await save_dialog.first()
         save_dialog_window.highlight(color=0xFF00FF, duration_ms=3000)  # Magenta color for 3 seconds
         await asyncio.sleep(1)
@@ -89,6 +89,9 @@ async def run_notepad():
                     break
         except:
             pass
+
+        # close notepad
+        editor.close()
 
     except terminator.PlatformError as e:
         print(f"Platform Error: {e}")
