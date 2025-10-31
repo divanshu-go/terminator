@@ -12,7 +12,8 @@
   },
   "files": [
     "index.js",
-    "config.js"
+    "config.js",
+    "utils/platform.js"
   ],
   "name": "terminator-mcp-agent",
   "optionalDependencies": {

@@ -7,42 +7,7 @@ const os = require("os");
 const readline = require("readline");
 const config = require("./config");
 const { supportedClients } = require("./config");
-
-function getPlatformInfo() {
-  const platform = process.platform;
-  const arch = process.arch;
-  if (platform === "win32" && arch === "x64")
-    return {
-      pkg: "terminator-mcp-win32-x64-msvc",
-      bin: "terminator-mcp-agent.exe",
-      npmDir: "win32-x64-msvc",
-    };
-  if (platform === "win32" && arch === "arm64")
-    return {
-      pkg: "terminator-mcp-win32-arm64-msvc",
-      bin: "terminator-mcp-agent.exe",
-      npmDir: "win32-arm64-msvc",
-    };
-  if (platform === "linux" && arch === "x64")
-    return {
-      pkg: "terminator-mcp-linux-x64-gnu",
-      bin: "terminator-mcp-agent",
-      npmDir: "linux-x64-gnu",
-    };
-  if (platform === "darwin" && arch === "x64")
-    return {
-      pkg: "terminator-mcp-darwin-x64",
-      bin: "terminator-mcp-agent",
-      npmDir: "darwin-x64",
-    };
-  if (platform === "darwin" && arch === "arm64")
-    return {
-      pkg: "terminator-mcp-darwin-arm64",
-      bin: "terminator-mcp-agent",
-      npmDir: "darwin-arm64",
-    };
-  throw new Error(`Unsupported platform: ${platform} ${arch}`);
-}
+const { getPlatformInfo } = require("./utils/platform");
 
 function addToApp(app) {
   try {

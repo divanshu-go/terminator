@@ -3,6 +3,7 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { getPlatformInfo } = require("./platform");
 
 const args = process.argv.slice(2);
 const isRelease = args.includes("--release");
@@ -13,30 +14,7 @@ if (!isRelease && !isDebug) {
   process.exit(1);
 }
 
-const platform = process.platform;
-const arch = process.arch;
-let target, binName, npmDir;
-
-if (platform === "win32" && arch === "x64") {
-  target = "x86_64-pc-windows-msvc";
-  binName = "terminator-mcp-agent.exe";
-  npmDir = "win32-x64-msvc";
-} else if (platform === "linux" && arch === "x64") {
-  target = "x86_64-unknown-linux-gnu";
-  binName = "terminator-mcp-agent";
-  npmDir = "linux-x64-gnu";
-} else if (platform === "darwin" && arch === "x64") {
-  target = "x86_64-apple-darwin";
-  binName = "terminator-mcp-agent";
-  npmDir = "darwin-x64";
-} else if (platform === "darwin" && arch === "arm64") {
-  target = "aarch64-apple-darwin";
-  binName = "terminator-mcp-agent";
-  npmDir = "darwin-arm64";
-} else {
-  console.error(`Unsupported platform: ${platform} ${arch}`);
-  process.exit(1);
-}
+const { platform, target, bin: binName, npmDir } = getPlatformInfo();
 
 // Kill any existing terminator-mcp-agent process before building
 try {
