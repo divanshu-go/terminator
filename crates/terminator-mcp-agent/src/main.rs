@@ -262,13 +262,26 @@ fn kill_previous_mcp_instances(enforce_single: bool) {
 }
 
 /// Set up synchronous signal handlers for graceful shutdown
+/// Uses libc on Unix and Windows API on Windows
 fn setup_signal_handlers() {
-    unsafe {
-        libc::signal(libc::SIGINT, signal_handler as libc::sighandler_t);
-        libc::signal(libc::SIGTERM, signal_handler as libc::sighandler_t);
+    #[cfg(unix)]
+    {
+        unsafe {
+            libc::signal(libc::SIGINT, signal_handler as libc::sighandler_t);
+            libc::signal(libc::SIGTERM, signal_handler as libc::sighandler_t);
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Console::*;
+        unsafe {
+            SetConsoleCtrlHandler(Some(windows_signal_handler), 1);
+        }
     }
 }
 
+#[cfg(unix)]
 extern "C" fn signal_handler(signum: libc::c_int) {
     let signal_name = match signum {
         libc::SIGINT => "SIGINT",
@@ -281,6 +294,18 @@ extern "C" fn signal_handler(signum: libc::c_int) {
     std::process::exit(0);
 }
 
+#[cfg(windows)]
+extern "system" fn windows_signal_handler(ctrl_type: u32) -> i32 {
+    use windows_sys::Win32::System::Console::*;
+    match ctrl_type {
+        CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT => {
+            eprintln!("Received shutdown signal - shutting down gracefully");
+            tracing::info!("Graceful shutdown initiated by signal");
+            std::process::exit(0);
+        }
+        _ => 0,
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -425,8 +450,12 @@ async fn main() -> Result<()> {
                 Err(e) => {
                     // Check if this is a normal connection closure
                     let error_msg = format!("{:?}", e);
-                    if error_msg.contains("ConnectionClosed") || error_msg.contains("connection closed") {
-                        tracing::info!("Stdio connection closed by client - shutting down gracefully");
+                    if error_msg.contains("ConnectionClosed")
+                        || error_msg.contains("connection closed")
+                    {
+                        tracing::info!(
+                            "Stdio connection closed by client - shutting down gracefully"
+                        );
                     } else {
                         tracing::error!("Stdio service error: {:?}", e);
                         return Err(e.into());
