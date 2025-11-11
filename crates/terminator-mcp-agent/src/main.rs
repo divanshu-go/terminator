@@ -274,9 +274,9 @@ fn setup_signal_handlers() {
 
     #[cfg(windows)]
     {
-        use windows_sys::Win32::System::Console::*;
+        use windows::Win32::System::Console::SetConsoleCtrlHandler;
         unsafe {
-            SetConsoleCtrlHandler(Some(windows_signal_handler), 1);
+            SetConsoleCtrlHandler(Some(windows_signal_handler), true).ok();
         }
     }
 }
@@ -295,16 +295,15 @@ extern "C" fn signal_handler(signum: libc::c_int) {
 }
 
 #[cfg(windows)]
-extern "system" fn windows_signal_handler(ctrl_type: u32) -> i32 {
-    use windows_sys::Win32::System::Console::*;
-    match ctrl_type {
-        CTRL_C_EVENT | CTRL_BREAK_EVENT | CTRL_CLOSE_EVENT => {
-            eprintln!("Received shutdown signal - shutting down gracefully");
-            tracing::info!("Graceful shutdown initiated by signal");
-            std::process::exit(0);
-        }
-        _ => 0,
+unsafe extern "system" fn windows_signal_handler(ctrl_type: u32) -> windows::Win32::Foundation::BOOL {
+    use windows::Win32::Foundation::BOOL;
+    use windows::Win32::System::Console::*;
+    if ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT || ctrl_type == CTRL_CLOSE_EVENT {
+        eprintln!("Received shutdown signal - shutting down gracefully");
+        tracing::info!("Graceful shutdown initiated by signal");
+        std::process::exit(0);
     }
+    BOOL::from(false)
 }
 
 #[tokio::main]
