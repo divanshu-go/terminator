@@ -46,7 +46,7 @@ if (platform === "win32" && arch === "x64") {
 try {
   // windows is annoying w filesystem
   if (platform === "win32") {
-    execSync("taskkill /f /im terminator-mcp-agent.exe 2>nul || exit 0", { stdio: "ignore" });
+    execSync("taskkill /im terminator-mcp-agent.exe 2>nul || exit 0", { stdio: "ignore" });
   }
 } catch (error) {
   // Ignore errors if process doesn't exist

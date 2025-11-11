@@ -261,9 +261,33 @@ fn kill_previous_mcp_instances(enforce_single: bool) {
     }
 }
 
+/// Set up synchronous signal handlers for graceful shutdown
+fn setup_signal_handlers() {
+    unsafe {
+        libc::signal(libc::SIGINT, signal_handler as libc::sighandler_t);
+        libc::signal(libc::SIGTERM, signal_handler as libc::sighandler_t);
+    }
+}
+
+extern "C" fn signal_handler(signum: libc::c_int) {
+    let signal_name = match signum {
+        libc::SIGINT => "SIGINT",
+        libc::SIGTERM => "SIGTERM",
+        _ => "UNKNOWN",
+    };
+    eprintln!("Received {} signal - shutting down gracefully", signal_name);
+    // Flush any pending logs
+    tracing::info!("Graceful shutdown initiated by {}", signal_name);
+    std::process::exit(0);
+}
+
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+
+    // Set up signal handlers for graceful shutdown
+    setup_signal_handlers();
 
     // Kill any previous MCP instances before starting
     kill_previous_mcp_instances(args.enforce_single_instance);
@@ -377,24 +401,38 @@ async fn main() -> Result<()> {
             };
 
             // Serve with better error handling
-            let service = desktop.serve(stdio()).await.inspect_err(|e| {
-                tracing::error!("Serving error: {:?}", e);
-                eprintln!("Fatal: stdio communication error: {e}");
-                // Many successful MCP servers exit cleanly on stdio errors
-                // This signals to Cursor that the server needs to be restarted
-                std::process::exit(1);
-            })?;
-
-            // Log periodic stats to help debug disconnections
-            tokio::spawn(async {
-                let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
-                loop {
-                    interval.tick().await;
-                    eprintln!("MCP server still running (stdio mode)");
+            let service = match desktop.serve(stdio()).await {
+                Ok(service) => service,
+                Err(e) => {
+                    // Check if this is a normal connection closure
+                    let error_msg = format!("{:?}", e);
+                    if error_msg.contains("ConnectionClosed") {
+                        tracing::info!("Stdio connection closed by client during initialization - shutting down gracefully");
+                        return Ok(());
+                    } else {
+                        tracing::error!("Failed to start stdio service: {:?}", e);
+                        eprintln!("Fatal: Failed to start MCP server: {e}");
+                        std::process::exit(1);
+                    }
                 }
-            });
+            };
 
-            service.waiting().await?;
+            // Run the service - signals are handled synchronously by signal handlers
+            match service.waiting().await {
+                Ok(_) => {
+                    tracing::info!("Stdio service completed normally");
+                }
+                Err(e) => {
+                    // Check if this is a normal connection closure
+                    let error_msg = format!("{:?}", e);
+                    if error_msg.contains("ConnectionClosed") || error_msg.contains("connection closed") {
+                        tracing::info!("Stdio connection closed by client - shutting down gracefully");
+                    } else {
+                        tracing::error!("Stdio service error: {:?}", e);
+                        return Err(e.into());
+                    }
+                }
+            }
         }
         TransportMode::Sse => {
             let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
