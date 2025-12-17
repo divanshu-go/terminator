@@ -3645,31 +3645,27 @@ DATA PASSING:
             let mut env_data = args.env.clone();
 
             if let Some(env) = &env_data {
-                if let Some(env_obj) = env.as_object() {
-                    // Extract workflow variables
-                    if let Some(vars) = env_obj.get("_workflow_variables") {
-                        variables_json =
-                            serde_json::to_string(vars).unwrap_or_else(|_| "{}".to_string());
-                    }
-                    // Extract accumulated env
-                    if let Some(acc_env) = env_obj.get("_accumulated_env") {
-                        accumulated_env_json =
-                            serde_json::to_string(acc_env).unwrap_or_else(|_| "{}".to_string());
-                    }
+                // Extract workflow variables
+                if let Some(vars) = env.get("_workflow_variables") {
+                    variables_json =
+                        serde_json::to_string(vars).unwrap_or_else(|_| "{}".to_string());
+                }
+                // Extract accumulated env
+                if let Some(acc_env) = env.get("_accumulated_env") {
+                    accumulated_env_json =
+                        serde_json::to_string(acc_env).unwrap_or_else(|_| "{}".to_string());
                 }
             }
 
             // Remove special keys from env before normal processing
             if let Some(env) = &mut env_data {
-                if let Some(env_obj) = env.as_object_mut() {
-                    env_obj.remove("_workflow_variables");
-                    env_obj.remove("_accumulated_env");
-                }
+                env.remove("_workflow_variables");
+                env.remove("_accumulated_env");
             }
 
             // Prepare explicit env if provided
             let explicit_env_json = if let Some(env) = &env_data {
-                if env.as_object().is_some_and(|o| !o.is_empty()) {
+                if !env.is_empty() {
                     serde_json::to_string(&env).map_err(|e| {
                         McpError::internal_error(
                             "Failed to serialize env data",
@@ -7648,31 +7644,27 @@ Requires Chrome extension installed."
         let mut env_data = args.env.clone();
 
         if let Some(env) = &env_data {
-            if let Some(env_obj) = env.as_object() {
-                // Extract workflow variables
-                if let Some(vars) = env_obj.get("_workflow_variables") {
-                    variables_json =
-                        serde_json::to_string(vars).unwrap_or_else(|_| "{}".to_string());
-                }
-                // Extract accumulated env
-                if let Some(acc_env) = env_obj.get("_accumulated_env") {
-                    accumulated_env_json =
-                        serde_json::to_string(acc_env).unwrap_or_else(|_| "{}".to_string());
-                }
+            // Extract workflow variables
+            if let Some(vars) = env.get("_workflow_variables") {
+                variables_json =
+                    serde_json::to_string(vars).unwrap_or_else(|_| "{}".to_string());
+            }
+            // Extract accumulated env
+            if let Some(acc_env) = env.get("_accumulated_env") {
+                accumulated_env_json =
+                    serde_json::to_string(acc_env).unwrap_or_else(|_| "{}".to_string());
             }
         }
 
         // Remove special keys from env before normal processing
         if let Some(env) = &mut env_data {
-            if let Some(env_obj) = env.as_object_mut() {
-                env_obj.remove("_workflow_variables");
-                env_obj.remove("_accumulated_env");
-            }
+            env.remove("_workflow_variables");
+            env.remove("_accumulated_env");
         }
 
         // Prepare explicit env if provided
         let explicit_env_json = if let Some(env) = &env_data {
-            if env.as_object().is_some_and(|o| !o.is_empty()) {
+            if !env.is_empty() {
                 serde_json::to_string(&env).map_err(|e| {
                     McpError::internal_error(
                         "Failed to serialize env data",

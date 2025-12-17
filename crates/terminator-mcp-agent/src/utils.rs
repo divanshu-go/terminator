@@ -937,7 +937,7 @@ pub struct RunCommandArgs {
     #[schemars(
         description = "Optional environment variables to inject into the script (only works with 'engine' mode). Variables are automatically available as proper JavaScript/Python types - JSON strings are parsed into objects/arrays. Variables can be accessed directly without 'env.' prefix."
     )]
-    pub env: Option<serde_json::Value>,
+    pub env: Option<std::collections::HashMap<String, serde_json::Value>>,
     #[schemars(
         description = "Optional high-level engine to execute inline code with SDK bindings. One of: 'node', 'bun', 'javascript', 'js', 'typescript', 'ts', 'python'. When set, 'run' or 'script_file' must contain the code to execute."
     )]
@@ -1174,7 +1174,7 @@ pub struct NavigateBrowserArgs {
 pub struct ExecuteBrowserScriptArgs {
     pub script: Option<String>,
     pub script_file: Option<String>,
-    pub env: Option<serde_json::Value>,
+    pub env: Option<std::collections::HashMap<String, serde_json::Value>>,
     #[schemars(
         description = "Include browser console output (console.log, console.error, console.warn, console.info) in response. Defaults to false. When enabled, automatically intercepts console methods and returns captured logs alongside the script result. Original console methods still output to DevTools."
     )]
